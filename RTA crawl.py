@@ -41,10 +41,10 @@ try:
 
         print(df)
 
-        if p == 1:
-            df.to_csv('doanhnghiep_biz.csv', index=False)
-        else:
-            df.to_csv('doanhnghiep_biz.csv', mode='a', index=False, header=False)
+        # if p == 1:
+        #     df.to_csv('doanhnghiep_biz.csv', index=False)
+        # else:
+        #     df.to_csv('doanhnghiep_biz.csv', mode='a', index=False, header=False)
 
         print(p)
         p += 1
