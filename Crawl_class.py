@@ -6,7 +6,7 @@ import re
 
 class Crawl:
 
-    def __int__(self, base_url):
+    def __init__(self, base_url):
         self.base_url = base_url
 
     def crawl_href(self):
@@ -25,11 +25,19 @@ class Crawl:
         href_ls = []
 
         for div in divs:
-            href = div.find('a')['href']
+            href = div.find('a')['href'][1:]
             href_ls.append(href)
 
         return href_ls
 
+    # def crawl_phone(self, com_url):
 
+
+
+base_url = 'https://doanhnghiep.biz/'
+
+scrape = Crawl(base_url)
+
+# print(scrape.crawl_href())
 
 

@@ -2,10 +2,11 @@ from bs4 import BeautifulSoup as bs
 import requests
 import pandas as pd
 import re
+from Crawl_class import Crawl
 
 # Create a dataframe to store data
 
-df = pd.DataFrame(columns=['name', 'mst', 'date', 'rep', 'address'])
+df = pd.DataFrame(columns=['name', 'mst', 'date', 'rep', 'address', 'phone', 'status', 'type'])
 '''
 name: ten cong ty
 mst: ma so thue
@@ -17,14 +18,14 @@ address: dia chi
 # Crawl
 base_url = 'https://doanhnghiep.biz/'
 
-url_list = ['{}?p={}'.format(base_url, str(page)) for page in range(1, 20)]
+url_list = ['{}?p={}'.format(base_url, str(page)) for page in range(1, 3)]
 
 try:
     p = 1  # to track the pages
 
     for url in url_list:
         html_text = requests.get(url).text
-        soup = bs(html_text, 'lxml')
+        soup = bs(html_text, 'html.parser')
 
         boxes = soup.find('div', class_='col-md-9')
         boxes = boxes.find_all('div')
@@ -37,9 +38,19 @@ try:
             rep = box.find('em').find('a').string
             address = box.find('address')
             address = address.get_text()
-            df = df.append({'name': name, 'mst': mst, 'date': date, 'rep': rep, 'address': address}, ignore_index=True)
+            com = {'name': name, 'mst': mst, 'date': date, 'rep': rep, 'address': address}
+            df = df.append(com, ignore_index=True)
 
-        print(df)
+        scrape = Crawl(url)
+        href = scrape.crawl_href()
+        href_ls = ['{}{}'.format(base_url, h) for h in href]
+
+        for h in href_ls:
+            html_text2 = requests.get(url).text
+            soup2 = bs(html_text2, 'html.parser')
+            status = soup2.find('td', itemdrop='Status')
+
+            print(status)
 
         # if p == 1:
         #     df.to_csv('doanhnghiep_biz.csv', index=False)
@@ -50,4 +61,4 @@ try:
         p += 1
 
 except:
-    pass
+    print('not ok')
