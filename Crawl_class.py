@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup as bs
 import requests
 import pandas as pd
-import re
 
 
 class Crawl:
@@ -9,9 +8,13 @@ class Crawl:
     def __init__(self, base_url):
         self.base_url = base_url
 
-    def crawl_href(self):
+    def crawl_all_pages(self):
+        url_list = ['{}?p={}'.format(self.base_url, str(page)) for page in range(1, 30)]
+        return url_list
 
-        html_text = requests.get(self.base_url).text
+    def crawl_href(self, url):
+
+        html_text = requests.get(url).text
         soup = bs(html_text, 'html.parser')
         box = soup.find('div', class_='col-md-9')
         divs = box.find_all('div')
@@ -20,58 +23,78 @@ class Crawl:
 
         for div in divs:
             href = div.find('a')['href'][1:]
-            href_ls.append('{}{}'.format(base_url, href))
+            href_ls.append('{}{}'.format(self.base_url, href))
 
         return href_ls
 
-    def crawl_data(self, h):
-        df = pd.DataFrame(columns=['name', 'inc_date', 'start_date', 'status', 'address',
-                                   'owner', 'taxid', 'phone', 'buss_cls'])
-
-        html_text = requests.get(h).text
+    def crawl_data(self, href):
+        # df = pd.DataFrame(columns=['name', 'inc_date', 'start_date', 'status', 'address',
+        #                            'owner', 'taxid', 'phone', 'buss_cls'])
+        output = pd.DataFrame()
+        html_text = requests.get(href).text
         soup = bs(html_text, 'html.parser')
 
-        name = soup.find('th', itemprop='name').string
+        data_itemprops = {
+            'name': 'name',
+            'inc_date': 'IncorporatedDate',
+            'start_date': 'StartDate',
+            'status': 'Status',
+            'address': 'address',
+            'taxid': 'taxID',
+            'phone': 'Phone',
+            'buss_cls': 'BusinessClass',
+        }
 
-        inc_date = soup.find('td', itemprop="IncorporatedDate").string
+        data_tags = {
+            'name': 'th',
+            'inc_date': 'td',
+            'start_date': 'td',
+            'status': 'td',
+            'address': 'td',
+            'taxid': 'td',
+            'phone': 'td',
+            'buss_cls': 'td',
+        }
 
-        start_date = soup.find('td', itemprop="StartDate").string
+        com = {}
 
-        status = soup.find('td', itemprop="Status").string
-
-        address = soup.find('td', itemprop="address").string
+        fields = data_itemprops.keys()
+        for field in fields:
+            tag = data_tags.get(field)
+            itemprop = data_itemprops.get(field)
+            try:
+                com[field] = soup.find(tag, itemprop=itemprop).string
+            except:
+                com[field] = None
 
         owner = soup.find('span', itemprop='Owner').find('a').string
+        com['owner'] = owner
 
-        taxid = soup.find('td', itemprop='taxID').string
+        output = output.append(com, ignore_index=True)
+        return output
 
-        phone = soup.find('td', itemprop='Phone').string
-        phone = phone.replace(' ', '')
 
-        buss_cls = soup.find('td', itemprop='BusinessClass').string
 
-        com = {'name': name, 'inc_date': inc_date, 'start_date': start_date, 'status': status,
-               'address': address, 'owner': owner, 'taxid': taxid, 'phone': phone,
-               'buss_cls': buss_cls}
-
-        df.append(com, ignore_index=True)
-
-        return df
-
-    def add_to_csv(self, p):
+    def add_to_csv(self, p, output):
         if p == 1:
-            self.df.to_csv('doanhnghiep_biz.csv', index=False)
+            output.to_csv('doanhnghiep_biz.csv', index=False)
         else:
-            self.df.to_csv('doanhnghiep_biz.csv', mode='a', index=False, header=False)
+            output.to_csv('doanhnghiep_biz.csv', mode='a', index=False, header=False)
 
 
-base_url = 'https://doanhnghiep.biz/'
+url = 'https://doanhnghiep.biz/'
 
-scrape = Crawl(base_url)
+scrape = Crawl(base_url=url)
 
-com_url = scrape.crawl_href()
+pages_url = scrape.crawl_all_pages()
 
 p = 1
 
-print(scrape.crawl_data(com_url[0]))
+for page in pages_url:
+    com_url = scrape.crawl_href(page)
 
+    for href in com_url:
+        output = scrape.crawl_data(href=href)
+        scrape.add_to_csv(p, output)
+        print(p)
+        p += 1
